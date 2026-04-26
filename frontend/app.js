@@ -15,6 +15,7 @@ function schafkopfApp() {
         },
         newPlayerName: '',
         selectedPlayers: [],
+        benchPlayersSelection: [],
         t_sau: 10,
         t_solo: 20,
         
@@ -29,6 +30,39 @@ function schafkopfApp() {
         chart: null,
         globalChart: null,
 
+        async deletePlayer(name) {
+            if (!confirm(`Soll der Spieler ${name} wirklich gelöscht werden?`)) return;
+            try {
+                await fetch(`${API_URL}/delete_player`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
+                });
+                await this.loadState();
+            } catch (err) {
+                alert("Fehler beim Löschen des Spielers");
+            }
+        },
+
+        async updatePlayerScore(name, currentScore) {
+            const newScore = prompt(`Neuer Punktestand für ${name}:`, currentScore);
+            if (newScore === null) return;
+            const parsedScore = parseInt(newScore);
+            if (isNaN(parsedScore)) {
+                alert("Ungültige Punktzahl");
+                return;
+            }
+            try {
+                await fetch(`${API_URL}/update_player_score`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, global_score: parsedScore })
+                });
+                await this.loadState();
+            } catch (err) {
+                alert("Fehler beim Speichern");
+            }
+        },
         async init() {
             await this.loadState();
             setInterval(() => this.loadState(), 2000);
@@ -43,6 +77,16 @@ function schafkopfApp() {
                 const previousSessionLength = this.state.session_players ? this.state.session_players.length : 0;
                 
                 this.state = newState;
+
+                const currentBenchPlayers = this.state.session_players.filter(
+                    p => !this.state.active_players.includes(p)
+                );
+                if (
+                    this.benchPlayersSelection.length === 0 ||
+                    this.benchPlayersSelection.some(p => !this.state.session_players.includes(p))
+                ) {
+                    this.benchPlayersSelection = [...currentBenchPlayers];
+                }
                 
                 if (this.state.session_players.length > 0) {
                     this.t_sau = this.state.t_sau;
@@ -61,6 +105,34 @@ function schafkopfApp() {
                 this.updateChart();
             } catch (err) {
                 console.error("Failed to load state", err);
+            }
+        },
+
+        async applyBenchPlayersSelection() {
+            if (this.state.session_players.length <= 4) return;
+
+            const benched = this.benchPlayersSelection || [];
+            const nextActive = this.state.session_players.filter(p => !benched.includes(p));
+
+            if (nextActive.length !== 4) {
+                alert("Bitte genau 4 aktive Spieler übrig lassen.");
+                return;
+            }
+
+            try {
+                await fetch(`${API_URL}/set_active_players`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ players: nextActive })
+                });
+
+                await this.loadState();
+
+                if (!this.state.active_players.includes(this.game.ansager) && this.state.active_players.length > 0) {
+                    this.game.ansager = this.state.active_players[0];
+                }
+            } catch (err) {
+                alert("Fehler beim Ändern der aktiven Spieler");
             }
         },
 
@@ -191,21 +263,6 @@ function schafkopfApp() {
             }
         },
 
-
-        async deleteMatch(timestamp) {
-            if (!confirm("Wirklich dieses Spiel löschen?")) return;
-            try {
-                await fetch(`${API_URL}/delete_match`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ timestamp: timestamp })
-                });
-                await this.loadState();
-            } catch (err) {
-                alert("Fehler beim Löschen des Spiels");
-            }
-        },
-
         movePlayerUp(index) {
             if (index > 0) {
                 let temp = this.state.session_players[index - 1];
@@ -219,20 +276,6 @@ function schafkopfApp() {
                 let temp = this.state.session_players[index + 1];
                 this.state.session_players[index + 1] = this.state.session_players[index];
                 this.state.session_players[index] = temp;
-            }
-        },
-
-        async updatePlayerOrder() {
-            try {
-                await fetch(`${API_URL}/reorder_players`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ players: this.state.session_players })
-                });
-                await this.loadState();
-                alert("Reihenfolge gespeichert!");
-            } catch (err) {
-                alert("Fehler beim Speichern der Reihenfolge");
             }
         },
 
@@ -264,6 +307,10 @@ function schafkopfApp() {
                     ansagerQuote: wq
                 };
             }).sort((a, b) => b.score - a.score);
+        },
+
+        get currentBenchPlayers() {
+            return this.state.session_players.filter(p => !this.state.active_players.includes(p));
         },
 
         updateChart() {
@@ -331,7 +378,7 @@ function schafkopfApp() {
             const ctxGlobal = document.getElementById('globalChart');
             if (!ctxGlobal) return;
 
-            const globalHistory = this.state.global_history || [];
+            const globalHistory = this.state.games || [];
             if (globalHistory.length === 0) return;
 
             const allPlayers = this.state.all_players || [];

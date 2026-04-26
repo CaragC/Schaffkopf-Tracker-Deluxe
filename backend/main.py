@@ -34,11 +34,11 @@ class SchafkopfData:
             try:
                 with open(DATA_FILE, 'r', encoding='utf-8') as f:
                     d = json.load(f)
-                    if "players" not in d: d = {"players": {}, "global_history": []}
+                    if "players" not in d: d = {"players": {}, "games": []}
                     return d
             except:
                 pass
-        return {"players": {}, "global_history": []}
+        return {"players": {}, "games": []}
 
     def save_data(self):
         self.data["session_players"] = self.session_players
@@ -143,9 +143,9 @@ class SchafkopfData:
             "scores": round_scores,
             "active_players": self.active_players.copy()
         }
-        if "global_history" not in self.data:
-            self.data["global_history"] = []
-        self.data["global_history"].append(match_record)
+        if "games" not in self.data:
+            self.data["games"] = []
+        self.data["games"].append(match_record)
 
         self.session_history.append({"type": game_type, "scores": round_scores, "ansager": ansager, "timestamp": match_record["timestamp"]})
         self.save_data()
@@ -168,7 +168,7 @@ class SchafkopfData:
             }
         
         # Replay all history
-        for match in self.data.get("global_history", []):
+        for match in self.data.get("games", []):
             game_type = match.get("game_type")
             winners = match.get("winners", [])
             ansager = match.get("ansager")
@@ -196,80 +196,13 @@ class SchafkopfData:
                         p_stats["total_wins_as_ansager"] += 1
 
     def delete_match(self, timestamp: str):
-        if "global_history" not in self.data:
+        if "games" not in self.data:
             return False
             
-        initial_len = len(self.data["global_history"])
-        self.data["global_history"] = [m for m in self.data["global_history"] if m.get("timestamp") != timestamp]
+        initial_len = len(self.data["games"])
+        self.data["games"] = [m for m in self.data["games"] if m.get("timestamp") != timestamp]
         
-        if len(self.data["global_history"]) == initial_len:
-            return False
-            
-        self.session_history = [m for m in self.session_history if m.get("timestamp") != timestamp]
-        
-        # Rotations-Index zurücksetzen, wenn es das letzte Spiel war (einfachheitshalber 1 Schritt zurück)
-        n = len(self.session_players)
-        if n > 4:
-            self.rotation_index = (self.rotation_index - 1) % n
-            self.active_players = [self.session_players[(self.rotation_index + i) % n] for i in range(4)]
-            
-        self.recalculate_stats()
-        self.save_data()
-        return True
-
-    def reorder_players(self, new_order: list):
-        if set(new_order) != set(self.session_players):
-            raise ValueError("Neue Reihenfolge muss die gleichen Spieler enthalten")
-        self.session_players = new_order
-        n = len(self.session_players)
-        self.active_players = [self.session_players[(self.rotation_index + i) % n] for i in range(min(4, n))]
-        self.save_data()
-        
-
-    def recalculate_stats(self):
-        # Reset current scores and stats
-        for p in self.data["players"]:
-            self.data["players"][p] = {
-                "global_score": 0, "soli_played": 0, "soli_won": 0,
-                "total_games_as_ansager": 0, "total_wins_as_ansager": 0
-            }
-        
-        # Replay all history
-        for match in self.data.get("global_history", []):
-            game_type = match.get("game_type")
-            winners = match.get("winners", [])
-            ansager = match.get("ansager")
-            round_scores = match.get("scores", {})
-            active_players = match.get("active_players", [])
-            
-            for p, score in round_scores.items():
-                if p in self.data["players"]:
-                    self.data["players"][p]["global_score"] += score
-                    
-            if game_type in ["Solo", "Wenz", "Geier"]:
-                is_win = (ansager in winners)
-                p_stats = self.data["players"].get(ansager)
-                if p_stats:
-                    p_stats["total_games_as_ansager"] += 1
-                    p_stats["soli_played"] += 1
-                    if is_win:
-                        p_stats["total_wins_as_ansager"] += 1
-                        p_stats["soli_won"] += 1
-            elif game_type and game_type != "Ramsch":
-                p_stats = self.data["players"].get(ansager)
-                if p_stats:
-                    p_stats["total_games_as_ansager"] += 1
-                    if ansager in winners: 
-                        p_stats["total_wins_as_ansager"] += 1
-
-    def delete_match(self, timestamp: str):
-        if "global_history" not in self.data:
-            return False
-            
-        initial_len = len(self.data["global_history"])
-        self.data["global_history"] = [m for m in self.data["global_history"] if m.get("timestamp") != timestamp]
-        
-        if len(self.data["global_history"]) == initial_len:
+        if len(self.data["games"]) == initial_len:
             return False
             
         self.session_history = [m for m in self.session_history if m.get("timestamp") != timestamp]
@@ -290,7 +223,31 @@ class SchafkopfData:
         self.session_players = new_order
         n = len(self.session_players)
         self.active_players = [self.session_players[(self.rotation_index + i) % n] for i in range(min(4, n))]
+        self.save_data()
+
+    def set_active_players(self, players: list):
+        if len(self.session_players) < 4:
+            raise ValueError("Keine aktive Session vorhanden")
+
+        expected_count = 4 if len(self.session_players) > 4 else len(self.session_players)
+        if len(players) != expected_count:
+            raise ValueError(f"Es müssen genau {expected_count} aktive Spieler gewählt werden")
+
+        if len(set(players)) != len(players):
+            raise ValueError("Spieler dürfen nicht doppelt gewählt werden")
+
+        if any(p not in self.session_players for p in players):
+            raise ValueError("Ungültige Spieler in aktiver Auswahl")
+
+        selected = set(players)
+        self.active_players = [p for p in self.session_players if p in selected]
+
+        if len(self.session_players) > 4 and self.active_players:
+            self.rotation_index = self.session_players.index(self.active_players[0])
+
+        self.save_data()
         
+
     def get_state(self):
 
 
@@ -300,7 +257,7 @@ class SchafkopfData:
             "session_players": self.session_players,
             "active_players": self.active_players,
             "session_history": self.session_history,
-            "global_history": self.data.get("global_history", []),
+            "games": self.data.get("games", []),
             "t_sau": self.t_sau,
             "t_solo": self.t_solo
         }
@@ -326,6 +283,10 @@ class DeleteMatchModel(BaseModel):
     timestamp: str
 
 class ReorderPlayersModel(BaseModel):
+    players: List[str]
+
+
+class SetActivePlayersModel(BaseModel):
     players: List[str]
 
 
@@ -377,20 +338,38 @@ def reorder_players(req: ReorderPlayersModel):
     return {"status": "ok"}
 
 
-@app.post("/delete_match")
-def delete_match(req: DeleteMatchModel):
-    success = db.delete_match(req.timestamp)
-    if not success:
-        raise HTTPException(status_code=404, detail="Match nicht gefunden")
-    return {"status": "ok"}
-
-@app.post("/reorder_players")
-def reorder_players(req: ReorderPlayersModel):
+@app.post("/set_active_players")
+def set_active_players(req: SetActivePlayersModel):
     try:
-        db.reorder_players(req.players)
+        db.set_active_players(req.players)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"status": "ok"}
+
+
+
+class DeletePlayerModel(BaseModel):
+    name: str
+
+class UpdatePlayerModel(BaseModel):
+    name: str
+    global_score: int
+
+@app.post("/delete_player")
+def delete_player(req: DeletePlayerModel):
+    if req.name in db.data.get("players", {}):
+        del db.data["players"][req.name]
+        db.save_data()
+        return {"status": "ok"}
+    raise HTTPException(status_code=404, detail="Player not found")
+
+@app.post("/update_player_score")
+def update_player_score(req: UpdatePlayerModel):
+    if req.name in db.data.get("players", {}):
+        db.data["players"][req.name]["global_score"] = req.global_score
+        db.save_data()
+        return {"status": "ok"}
+    raise HTTPException(status_code=404, detail="Player not found")
 
 # Serve frontend statically
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")

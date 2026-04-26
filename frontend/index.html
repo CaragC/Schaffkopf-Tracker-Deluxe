@@ -11,25 +11,26 @@
     <!-- Chart.js for statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen text-gray-800 font-sans" x-data="schafkopfApp()">
+<body class="bg-gray-100 min-h-screen text-gray-800 font-sans" x-data="schafkopfApp()" @init="init()">
     
     <nav class="bg-blue-600 text-white shadow-lg">
         <div class="max-w-6xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="text-2xl font-bold">🂠 Schafkopf Tracker</div>
-                <div class="flex space-x-4">
-                    <button @click="tab = 'setup'" :class="tab === 'setup' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded">Setup</button>
-                    <button @click="tab = 'play'" :class="tab === 'play' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded">Aktuelles Spiel</button>
-                    <button @click="tab = 'stats'" :class="tab === 'stats' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded">Ranking & Verlauf</button>
+            <div class="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
+                <div class="text-2xl font-bold text-center w-full md:w-auto">🂠 Schafkopf Tracker</div>
+                <div class="flex flex-wrap justify-center gap-2 w-full md:w-auto">
+                    <button @click="tab = 'setup'" :class="tab === 'setup' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded flex-1 md:flex-none text-center">Setup</button>
+                    <button @click="tab = 'play'" :class="tab === 'play' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded flex-1 md:flex-none text-center whitespace-nowrap">Aktuelles Spiel</button>
+                    <button @click="tab = 'stats'" :class="tab === 'stats' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded flex-1 md:flex-none text-center whitespace-nowrap">Ranking</button>
+                    <button @click="tab = 'data'" :class="tab === 'data' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded flex-1 md:flex-none text-center whitespace-nowrap">Daten</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto px-4 py-8">
+    <main class="max-w-6xl mx-auto px-4 py-4 md:py-4 md:py-8">
         <!-- SETUP TAB -->
         <div x-show="tab === 'setup'" class="space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow">
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Neuen Spieler anlegen</h2>
                 <div class="flex space-x-2">
                     <input x-model="newPlayerName" type="text" placeholder="Name" class="border rounded px-3 py-2 flex-grow focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -37,7 +38,7 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Session Starten</h2>
                 
                 <div class="mb-4">
@@ -82,8 +83,31 @@
                     <p class="font-bold">Aktiv am Tisch</p>
                     <p x-text="state.active_players.join(', ')"></p>
                 </div>
+
+                <div x-show="state.session_players.length > 4" class="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Wer setzt aus?</h2>
+                    <p class="text-sm text-gray-600 mb-4">Wähle die Spieler, die diese Runde nicht mitspielen (es müssen 4 aktiv bleiben).</p>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                        <template x-for="player in state.session_players" :key="'bench-' + player">
+                            <label class="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" :value="player" x-model="benchPlayersSelection" class="form-checkbox h-5 w-5 text-orange-600">
+                                <span x-text="player"></span>
+                            </label>
+                        </template>
+                    </div>
+
+                    <div class="text-sm text-gray-700 mb-3">
+                        Aktuell ausgesetzt:
+                        <span class="font-semibold" x-text="currentBenchPlayers.length ? currentBenchPlayers.join(', ') : 'Niemand'"></span>
+                    </div>
+
+                    <button @click="applyBenchPlayersSelection" class="w-full bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 font-bold">
+                        Aktive Spieler aktualisieren
+                    </button>
+                </div>
                 
-                <div x-data="{ showOrderEditor: false }" class="bg-white p-6 rounded-lg shadow mb-6">
+                <div x-data="{ showOrderEditor: false }" class="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
                         <h2 class="text-xl font-bold">Spielerreihenfolge ändern</h2>
                         <button @click="showOrderEditor = !showOrderEditor" class="text-blue-600 hover:text-blue-800 text-sm font-semibold" x-text="showOrderEditor ? 'Ausblenden' : 'Anzeigen'"></button>
@@ -106,7 +130,7 @@
                 </div>
 
 
-                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
                     <h2 class="text-xl font-bold mb-4 border-b pb-2">Rundendaten Eingeben</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -145,11 +169,11 @@
 
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Wer hat gewonnen?</label>
-                        <div class="flex space-x-6">
+                        <div class="flex flex-wrap gap-4">
                             <template x-for="p in state.active_players" :key="p">
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" :value="p" x-model="game.winners" class="form-checkbox h-5 w-5 text-green-600">
-                                    <span x-text="p"></span>
+                                <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-2 border rounded">
+                                    <input type="checkbox" :value="p" x-model="game.winners" class="form-checkbox h-6 w-6 text-green-600">
+                                    <span x-text="p" class="font-medium"></span>
                                 </label>
                             </template>
                         </div>
@@ -162,7 +186,7 @@
                 </div>
 
                 <!-- Session History Table -->
-                <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow overflow-x-auto">
                     <h2 class="text-xl font-bold mb-4 border-b pb-2">Session Historie</h2>
                     <table class="min-w-full text-sm text-left">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
@@ -173,10 +197,6 @@
                                     <th class="px-4 py-3" x-text="p"></th>
                                 </template>
                                 <th class="px-4 py-3">Aktion</th>
-                                <th class="px-4 py-3">Aktion</th>
-                                <th class="px-4 py-3">Aktion</th>
-                                
-                                
                             </tr>
                         </thead>
                         <tbody>
@@ -190,9 +210,6 @@
                                     <td class="px-4 py-3">
                                         <button @click="deleteMatch(state.session_history[idx].timestamp)" class="text-red-500 hover:text-red-700 font-bold">Löschen</button>
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <button @click="deleteMatch(state.session_history[idx].timestamp)" class="text-red-500 hover:text-red-700 font-bold">Löschen</button>
-                                    </td>
                                 </tr>
                             </template>
                         </tbody>
@@ -203,7 +220,7 @@
 
         <!-- STATS TAB -->
         <div x-show="tab === 'stats'" class="space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow overflow-x-auto">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Globales Ranking</h2>
                 <table class="min-w-full text-sm text-left">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
@@ -227,14 +244,68 @@
                 </table>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow mt-6">
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow mt-6">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Globaler Punkteverlauf (Alle Spiele)</h2>
                 <canvas id="globalChart"></canvas>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow mt-6" x-show="state.session_players.length > 0">
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow mt-6" x-show="state.session_players.length > 0">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Punkteverlauf (Session)</h2>
                 <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+
+        <!-- DATES TAB -->
+        <div x-show="tab === 'data'" class="space-y-6">
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow overflow-x-auto">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Alle Spieler (Bearbeiten/Löschen)</h2>
+                <table class="min-w-full text-sm text-left mb-6">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3 text-right">Gesamtpunkte</th>
+                            <th class="px-4 py-3">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="p in rankedPlayers" :key="p.name">
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-3 font-bold" x-text="p.name"></td>
+                                <td class="px-4 py-3 text-right" x-text="p.score"></td>
+                                <td class="px-4 py-3 space-x-2">
+                                    <button @click="updatePlayerScore(p.name, p.score)" class="text-blue-500 hover:text-blue-700 font-bold">Punkte anpassen</button>
+                                    <button @click="deletePlayer(p.name)" class="text-red-500 hover:text-red-700 font-bold">Löschen</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Alle Spiele (Gesamthistorie)</h2>
+                <table class="min-w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-4 py-3">Typ</th>
+                            <th class="px-4 py-3">Ansager</th>
+                            <th class="px-4 py-3">Gewinner</th>
+                            <th class="px-4 py-3">Resultat</th>
+                            <th class="px-4 py-3">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="m in state.games" :key="m.timestamp">
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-3 font-medium" x-text="m.game_type"></td>
+                                <td class="px-4 py-3" x-text="m.ansager"></td>
+                                <td class="px-4 py-3 text-green-600" x-text="m.winners.join(', ')"></td>
+                                <td class="px-4 py-3" x-text="m.status || 'Normal'"></td>
+                                <td class="px-4 py-3">
+                                    <button @click="deleteMatch(m.timestamp)" class="text-red-500 hover:text-red-700 font-bold">Spiel Löschen</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schafkopf Tracker</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js via CDN for reactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 font-sans" x-data="schafkopfApp()">
+    
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="text-2xl font-bold">🂠 Schafkopf Tracker</div>
+                <div class="flex space-x-4">
+                    <button @click="tab = 'setup'" :class="tab === 'setup' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded">Setup</button>
+                    <button @click="tab = 'play'" :class="tab === 'play' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded">Aktuelles Spiel</button>
+                    <button @click="tab = 'stats'" :class="tab === 'stats' ? 'bg-blue-700' : ''" class="px-3 py-2 rounded">Ranking & Verlauf</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- SETUP TAB -->
+        <div x-show="tab === 'setup'" class="space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Neuen Spieler anlegen</h2>
+                <div class="flex space-x-2">
+                    <input x-model="newPlayerName" type="text" placeholder="Name" class="border rounded px-3 py-2 flex-grow focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button @click="addPlayer" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Speichern</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Session Starten</h2>
+                
+                <div class="mb-4">
+                    <h3 class="font-semibold mb-2">Spieler für diese Runde wählen (mind. 4):</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <template x-for="player in state.all_players" :key="player">
+                            <label class="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" :value="player" x-model="selectedPlayers" class="form-checkbox h-5 w-5 text-blue-600">
+                                <span x-text="player"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Tarif Sauspiel/Ramsch:</label>
+                        <input x-model.number="t_sau" type="number" min="1" class="mt-1 block w-full border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Tarif Solo/Wenz:</label>
+                        <input x-model.number="t_solo" type="number" min="1" class="mt-1 block w-full border rounded px-3 py-2">
+                    </div>
+                </div>
+
+                <button @click="startSession" class="w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700 text-lg">
+                    Session Jetzt Starten
+                </button>
+            </div>
+        </div>
+
+        <!-- PLAY TAB -->
+        <div x-show="tab === 'play'" class="space-y-6">
+            <div x-show="state.session_players.length === 0" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                Bitte erst im Setup eine Session starten!
+            </div>
+
+            <div x-show="state.session_players.length > 0">
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+                    <p class="font-bold">Aktiv am Tisch</p>
+                    <p x-text="state.active_players.join(', ')"></p>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Rundendaten Eingeben</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Spielart</label>
+                            <select x-model="game.game_type" class="mt-1 block w-full border rounded px-3 py-2">
+                                <option>Sauspiel</option>
+                                <option>Solo</option>
+                                <option>Wenz</option>
+                                <option>Geier</option>
+                                <option>Ramsch</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Ansager</label>
+                            <select x-model="game.ansager" class="mt-1 block w-full border rounded px-3 py-2">
+                                <template x-for="p in state.active_players" :key="p">
+                                    <option x-text="p"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Laufende</label>
+                            <input x-model.number="game.laufende" type="number" min="0" max="15" class="mt-1 block w-full border rounded px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Ergebnis</label>
+                            <select x-model="game.status" class="mt-1 block w-full border rounded px-3 py-2">
+                                <option>Normal</option>
+                                <option>Schneider</option>
+                                <option>Schwarz</option>
+                                <option>Sie (Alle Stiche)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Wer hat gewonnen?</label>
+                        <div class="flex space-x-6">
+                            <template x-for="p in state.active_players" :key="p">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" :value="p" x-model="game.winners" class="form-checkbox h-5 w-5 text-green-600">
+                                    <span x-text="p"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+
+                    <button @click="recordGame" class="w-full bg-indigo-600 text-white font-bold py-3 rounded hover:bg-indigo-700">
+                        Ergebnis Speichern & Geber Wechseln
+                    </button>
+                    <div x-show="errorMsg" class="mt-4 text-red-600 font-semibold" x-text="errorMsg"></div>
+                </div>
+
+                <!-- Session History Table -->
+                <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                    <h2 class="text-xl font-bold mb-4 border-b pb-2">Session Historie</h2>
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-4 py-3">Nr</th>
+                                <th class="px-4 py-3">Typ</th>
+                                <template x-for="p in state.session_players">
+                                    <th class="px-4 py-3" x-text="p"></th>
+                                </template>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(h, idx) in sessionHistoryAggregated" :key="idx">
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-3" x-text="idx + 1"></td>
+                                    <td class="px-4 py-3 font-medium" x-text="h.type"></td>
+                                    <template x-for="p in state.session_players">
+                                        <td class="px-4 py-3 text-right" :class="h.scores[p] >= 0 ? 'text-green-600' : 'text-red-600'" x-text="h.scores[p]"></td>
+                                    </template>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS TAB -->
+        <div x-show="tab === 'stats'" class="space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Globales Ranking</h2>
+                <table class="min-w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3 text-right">Gesamtpunkte</th>
+                            <th class="px-4 py-3 text-right">Soli-Quote</th>
+                            <th class="px-4 py-3 text-right">Ansager-Quote</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="p in rankedPlayers" :key="p.name">
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-3 font-bold" x-text="p.name"></td>
+                                <td class="px-4 py-3 text-right" :class="p.score >= 0 ? 'text-green-600' : 'text-red-600'" x-text="p.score"></td>
+                                <td class="px-4 py-3 text-right" x-text="p.soliQuote"></td>
+                                <td class="px-4 py-3 text-right" x-text="p.ansagerQuote"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow" x-show="state.session_players.length > 0">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Punkteverlauf (Session)</h2>
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

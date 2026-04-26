@@ -1,0 +1,40 @@
+{
+    "players": {
+        "Basti": {
+            "global_score": 2,
+            "soli_played": 0,
+            "soli_won": 0,
+            "total_games_as_ansager": 0,
+            "total_wins_as_ansager": 0
+        },
+        "Jannis": {
+            "global_score": 2,
+            "soli_played": 0,
+            "soli_won": 0,
+            "total_games_as_ansager": 0,
+            "total_wins_as_ansager": 0
+        },
+        "Schweizer": {
+            "global_score": -2,
+            "soli_played": 0,
+            "soli_won": 0,
+            "total_games_as_ansager": 0,
+            "total_wins_as_ansager": 0
+        },
+        "Vali": {
+            "global_score": 0,
+            "soli_played": 0,
+            "soli_won": 0,
+            "total_games_as_ansager": 0,
+            "total_wins_as_ansager": 0
+        },
+        "Xaver": {
+            "global_score": -2,
+            "soli_played": 0,
+            "soli_won": 0,
+            "total_games_as_ansager": 1,
+            "total_wins_as_ansager": 0
+        }
+    },
+    "global_history": []
+}

@@ -15,6 +15,9 @@
         devShells.default = pkgs.mkShell {
           packages = [
             (pkgs.python3.withPackages (python-pkgs: with python-pkgs; [
+              fastapi
+              uvicorn
+              pydantic
               pandas
               requests
             ]))

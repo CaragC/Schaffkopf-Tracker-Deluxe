@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:8000";
+// Use relative path since we are now serving the frontend directly from FastAPI
+const API_URL = "";
 
 function schafkopfApp() {
     return {
@@ -26,18 +27,36 @@ function schafkopfApp() {
         },
         errorMsg: '',
         chart: null,
+        globalChart: null,
 
         async init() {
             await this.loadState();
+            setInterval(() => this.loadState(), 2000);
         },
 
         async loadState() {
             try {
                 const res = await fetch(`${API_URL}/state`);
-                this.state = await res.json();
+                const newState = await res.json();
+                
+                // Determine if a session just started for this client
+                const previousSessionLength = this.state.session_players ? this.state.session_players.length : 0;
+                
+                this.state = newState;
+                
                 if (this.state.session_players.length > 0) {
                     this.t_sau = this.state.t_sau;
                     this.t_solo = this.state.t_solo;
+                    
+                    // Switch tab automatically if a session goes active
+                    if (this.tab === 'setup' && previousSessionLength === 0) {
+                        this.tab = 'play';
+                    }
+                    
+                    // Automatically set Ansager for other clients if it's empty
+                    if (!this.game.ansager && this.state.active_players.length > 0) {
+                        this.game.ansager = this.state.active_players[0];
+                    }
                 }
                 this.updateChart();
             } catch (err) {
@@ -127,6 +146,96 @@ function schafkopfApp() {
             }
         },
 
+
+        async deleteMatch(timestamp) {
+            if (!confirm("Wirklich dieses Spiel löschen?")) return;
+            try {
+                await fetch(`${API_URL}/delete_match`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timestamp: timestamp })
+                });
+                await this.loadState();
+            } catch (err) {
+                alert("Fehler beim Löschen des Spiels");
+            }
+        },
+
+        movePlayerUp(index) {
+            if (index > 0) {
+                let temp = this.state.session_players[index - 1];
+                this.state.session_players[index - 1] = this.state.session_players[index];
+                this.state.session_players[index] = temp;
+            }
+        },
+
+        movePlayerDown(index) {
+            if (index < this.state.session_players.length - 1) {
+                let temp = this.state.session_players[index + 1];
+                this.state.session_players[index + 1] = this.state.session_players[index];
+                this.state.session_players[index] = temp;
+            }
+        },
+
+        async updatePlayerOrder() {
+            try {
+                await fetch(`${API_URL}/reorder_players`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ players: this.state.session_players })
+                });
+                await this.loadState();
+                alert("Reihenfolge gespeichert!");
+            } catch (err) {
+                alert("Fehler beim Speichern der Reihenfolge");
+            }
+        },
+
+
+        async deleteMatch(timestamp) {
+            if (!confirm("Wirklich dieses Spiel löschen?")) return;
+            try {
+                await fetch(`${API_URL}/delete_match`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timestamp: timestamp })
+                });
+                await this.loadState();
+            } catch (err) {
+                alert("Fehler beim Löschen des Spiels");
+            }
+        },
+
+        movePlayerUp(index) {
+            if (index > 0) {
+                let temp = this.state.session_players[index - 1];
+                this.state.session_players[index - 1] = this.state.session_players[index];
+                this.state.session_players[index] = temp;
+            }
+        },
+
+        movePlayerDown(index) {
+            if (index < this.state.session_players.length - 1) {
+                let temp = this.state.session_players[index + 1];
+                this.state.session_players[index + 1] = this.state.session_players[index];
+                this.state.session_players[index] = temp;
+            }
+        },
+
+        async updatePlayerOrder() {
+            try {
+                await fetch(`${API_URL}/reorder_players`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ players: this.state.session_players })
+                });
+                await this.loadState();
+                alert("Reihenfolge gespeichert!");
+            } catch (err) {
+                alert("Fehler beim Speichern der Reihenfolge");
+            }
+        },
+
         get sessionHistoryAggregated() {
             let cum = {};
             this.state.session_players.forEach(p => cum[p] = 0);
@@ -158,6 +267,8 @@ function schafkopfApp() {
         },
 
         updateChart() {
+            this.updateGlobalChart();
+            
             if (this.state.session_players.length === 0) return;
             
             const ctx = document.getElementById('scoreChart');
@@ -208,6 +319,79 @@ function schafkopfApp() {
                                 grid: {
                                     color: (ctx) => ctx.tick.value === 0 ? '#000' : 'rgba(0,0,0,0.1)',
                                     lineWidth: (ctx) => ctx.tick.value === 0 ? 2 : 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+
+        updateGlobalChart() {
+            const ctxGlobal = document.getElementById('globalChart');
+            if (!ctxGlobal) return;
+
+            const globalHistory = this.state.global_history || [];
+            if (globalHistory.length === 0) return;
+
+            const allPlayers = this.state.all_players || [];
+            
+            let pts = {};
+            let cum = {};
+            allPlayers.forEach(p => {
+                pts[p] = [0];
+                cum[p] = 0;
+            });
+            
+            let labels = ['Start'];
+            
+            globalHistory.forEach((h, i) => {
+                labels.push(`Spiel ${i+1}`);
+                // Update cumulative scores for players in this match
+                if (h.scores) {
+                    for (const [player, score] of Object.entries(h.scores)) {
+                        if (cum[player] !== undefined) {
+                            cum[player] += score;
+                        }
+                    }
+                }
+                // Push current cumulative score for ALL players to keep the line continuous
+                allPlayers.forEach(p => {
+                    pts[p].push(cum[p]);
+                });
+            });
+
+            const colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080'];
+            
+            const datasets = allPlayers.map((p, i) => {
+                return {
+                    label: p,
+                    data: pts[p],
+                    borderColor: colors[i % colors.length],
+                    backgroundColor: colors[i % colors.length],
+                    tension: 0.1
+                }
+            });
+
+            if (this.globalChart) {
+                this.globalChart.data.labels = labels;
+                this.globalChart.data.datasets = datasets;
+                this.globalChart.update();
+            } else {
+                // @ts-ignore
+                this.globalChart = new Chart(ctxGlobal, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                grid: {
+                                    color: (ctx) => ctx.tick && ctx.tick.value === 0 ? '#000' : 'rgba(0,0,0,0.1)',
+                                    lineWidth: (ctx) => ctx.tick && ctx.tick.value === 0 ? 2 : 1
                                 }
                             }
                         }

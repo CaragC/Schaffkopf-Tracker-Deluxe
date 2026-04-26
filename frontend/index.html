@@ -76,10 +76,35 @@
             </div>
 
             <div x-show="state.session_players.length > 0">
+
+
                 <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
                     <p class="font-bold">Aktiv am Tisch</p>
                     <p x-text="state.active_players.join(', ')"></p>
                 </div>
+                
+                <div x-data="{ showOrderEditor: false }" class="bg-white p-6 rounded-lg shadow mb-6">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h2 class="text-xl font-bold">Spielerreihenfolge ändern</h2>
+                        <button @click="showOrderEditor = !showOrderEditor" class="text-blue-600 hover:text-blue-800 text-sm font-semibold" x-text="showOrderEditor ? 'Ausblenden' : 'Anzeigen'"></button>
+                    </div>
+                    <div x-show="showOrderEditor" x-transition x-cloak>
+                        <p class="text-sm text-gray-600 mb-4">Hier kannst du die Reihenfolge für das nächste Spiel anpassen.</p>
+                        <ul class="space-y-2">
+                            <template x-for="(p, index) in state.session_players" :key="p">
+                                <li class="flex items-center justify-between p-2 border rounded bg-gray-50">
+                                    <span class="font-semibold" x-text="(index+1) + '. ' + p"></span>
+                                    <div class="flex gap-2">
+                                         <button @click="movePlayerUp(index)" :disabled="index === 0" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50">↑</button>
+                                         <button @click="movePlayerDown(index)" :disabled="index === state.session_players.length - 1" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50">↓</button>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                        <button @click="updatePlayerOrder(); showOrderEditor = false" class="mt-4 w-full bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 font-bold">Reihenfolge speichern</button>
+                    </div>
+                </div>
+
 
                 <div class="bg-white p-6 rounded-lg shadow mb-6">
                     <h2 class="text-xl font-bold mb-4 border-b pb-2">Rundendaten Eingeben</h2>
@@ -147,6 +172,11 @@
                                 <template x-for="p in state.session_players">
                                     <th class="px-4 py-3" x-text="p"></th>
                                 </template>
+                                <th class="px-4 py-3">Aktion</th>
+                                <th class="px-4 py-3">Aktion</th>
+                                <th class="px-4 py-3">Aktion</th>
+                                
+                                
                             </tr>
                         </thead>
                         <tbody>
@@ -157,6 +187,12 @@
                                     <template x-for="p in state.session_players">
                                         <td class="px-4 py-3 text-right" :class="h.scores[p] >= 0 ? 'text-green-600' : 'text-red-600'" x-text="h.scores[p]"></td>
                                     </template>
+                                    <td class="px-4 py-3">
+                                        <button @click="deleteMatch(state.session_history[idx].timestamp)" class="text-red-500 hover:text-red-700 font-bold">Löschen</button>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <button @click="deleteMatch(state.session_history[idx].timestamp)" class="text-red-500 hover:text-red-700 font-bold">Löschen</button>
+                                    </td>
                                 </tr>
                             </template>
                         </tbody>
@@ -191,7 +227,12 @@
                 </table>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow" x-show="state.session_players.length > 0">
+            <div class="bg-white p-6 rounded-lg shadow mt-6">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Globaler Punkteverlauf (Alle Spiele)</h2>
+                <canvas id="globalChart"></canvas>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow mt-6" x-show="state.session_players.length > 0">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Punkteverlauf (Session)</h2>
                 <canvas id="scoreChart"></canvas>
             </div>

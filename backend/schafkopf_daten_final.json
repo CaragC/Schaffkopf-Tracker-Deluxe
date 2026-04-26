@@ -4,37 +4,152 @@
             "global_score": 2,
             "soli_played": 0,
             "soli_won": 0,
-            "total_games_as_ansager": 0,
-            "total_wins_as_ansager": 0
+            "total_games_as_ansager": 2,
+            "total_wins_as_ansager": 1
         },
         "Jannis": {
-            "global_score": 2,
+            "global_score": 32,
             "soli_played": 0,
             "soli_won": 0,
-            "total_games_as_ansager": 0,
-            "total_wins_as_ansager": 0
+            "total_games_as_ansager": 1,
+            "total_wins_as_ansager": 1
         },
         "Schweizer": {
-            "global_score": -2,
+            "global_score": 8,
             "soli_played": 0,
             "soli_won": 0,
             "total_games_as_ansager": 0,
             "total_wins_as_ansager": 0
         },
         "Vali": {
-            "global_score": 0,
+            "global_score": -30,
             "soli_played": 0,
             "soli_won": 0,
             "total_games_as_ansager": 0,
             "total_wins_as_ansager": 0
         },
         "Xaver": {
-            "global_score": -2,
+            "global_score": -12,
             "soli_played": 0,
             "soli_won": 0,
             "total_games_as_ansager": 1,
             "total_wins_as_ansager": 0
         }
     },
-    "global_history": []
+    "global_history": [
+        {
+            "timestamp": "2026-04-26T19:11:27.845669",
+            "game_type": "Sauspiel",
+            "ansager": "Basti",
+            "winners": [
+                "Jannis",
+                "Schweizer"
+            ],
+            "laufende": 0,
+            "status": "Normal",
+            "scores": {
+                "Basti": -10,
+                "Jannis": 10,
+                "Schweizer": 10,
+                "Vali": -10,
+                "Xaver": 0
+            },
+            "active_players": [
+                "Basti",
+                "Jannis",
+                "Schweizer",
+                "Vali"
+            ]
+        },
+        {
+            "timestamp": "2026-04-26T19:30:16.304307",
+            "game_type": "Sauspiel",
+            "ansager": "Basti",
+            "winners": [
+                "Basti",
+                "Jannis"
+            ],
+            "laufende": 0,
+            "status": "Normal",
+            "scores": {
+                "Basti": 10,
+                "Jannis": 10,
+                "Schweizer": -10,
+                "Vali": -10,
+                "Xaver": 0
+            },
+            "active_players": [
+                "Basti",
+                "Jannis",
+                "Schweizer",
+                "Vali"
+            ]
+        },
+        {
+            "timestamp": "2026-04-26T19:32:11.585977",
+            "game_type": "Sauspiel",
+            "ansager": "Jannis",
+            "winners": [
+                "Jannis",
+                "Schweizer"
+            ],
+            "laufende": 0,
+            "status": "Normal",
+            "scores": {
+                "Basti": 0,
+                "Jannis": 10,
+                "Schweizer": 10,
+                "Vali": -10,
+                "Xaver": -10
+            },
+            "active_players": [
+                "Jannis",
+                "Schweizer",
+                "Vali",
+                "Xaver"
+            ]
+        }
+    ],
+    "session_players": [
+        "Basti",
+        "Jannis",
+        "Schweizer",
+        "Vali",
+        "Xaver"
+    ],
+    "active_players": [
+        "Schweizer",
+        "Vali",
+        "Xaver",
+        "Basti"
+    ],
+    "rotation_index": 2,
+    "session_history": [
+        {
+            "type": "Sauspiel",
+            "scores": {
+                "Basti": 10,
+                "Jannis": 10,
+                "Schweizer": -10,
+                "Vali": -10,
+                "Xaver": 0
+            },
+            "ansager": "Basti",
+            "timestamp": "2026-04-26T19:30:16.304307"
+        },
+        {
+            "type": "Sauspiel",
+            "scores": {
+                "Basti": 0,
+                "Jannis": 10,
+                "Schweizer": 10,
+                "Vali": -10,
+                "Xaver": -10
+            },
+            "ansager": "Jannis",
+            "timestamp": "2026-04-26T19:32:11.585977"
+        }
+    ],
+    "t_sau": 10,
+    "t_solo": 20
 }

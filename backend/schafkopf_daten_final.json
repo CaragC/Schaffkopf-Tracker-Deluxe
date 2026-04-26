@@ -1,14 +1,14 @@
 {
     "players": {
         "Basti": {
-            "global_score": -2,
+            "global_score": 0,
             "soli_played": 0,
             "soli_won": 0,
             "total_games_as_ansager": 0,
             "total_wins_as_ansager": 0
         },
         "Jannis": {
-            "global_score": 0,
+            "global_score": 2,
             "soli_played": 0,
             "soli_won": 0,
             "total_games_as_ansager": 0,
@@ -22,14 +22,14 @@
             "total_wins_as_ansager": 0
         },
         "Vali": {
-            "global_score": 6,
-            "soli_played": 1,
+            "global_score": 0,
+            "soli_played": 2,
             "soli_won": 1,
-            "total_games_as_ansager": 1,
+            "total_games_as_ansager": 2,
             "total_wins_as_ansager": 1
         },
         "Xaver": {
-            "global_score": -2,
+            "global_score": 0,
             "soli_played": 0,
             "soli_won": 0,
             "total_games_as_ansager": 0,
@@ -59,34 +59,56 @@
                 "Xaver",
                 "Vali"
             ]
+        },
+        {
+            "timestamp": "2026-04-26T20:13:59.375426",
+            "game_type": "Geier",
+            "ansager": "Vali",
+            "winners": [
+                "Basti",
+                "Jannis",
+                "Xaver"
+            ],
+            "laufende": 0,
+            "status": "Normal",
+            "scores": {
+                "Basti": 2,
+                "Jannis": 2,
+                "Vali": -6,
+                "Xaver": 2
+            },
+            "active_players": [
+                "Basti",
+                "Jannis",
+                "Vali",
+                "Xaver"
+            ]
         }
     ],
     "session_players": [
         "Basti",
-        "Schweizer",
-        "Xaver",
         "Jannis",
-        "Vali"
+        "Vali",
+        "Xaver"
     ],
     "active_players": [
-        "Schweizer",
-        "Xaver",
+        "Basti",
         "Jannis",
-        "Vali"
+        "Vali",
+        "Xaver"
     ],
-    "rotation_index": 1,
+    "rotation_index": 0,
     "session_history": [
         {
             "type": "Geier",
             "scores": {
-                "Basti": -2,
-                "Schweizer": -2,
-                "Xaver": -2,
-                "Jannis": 0,
-                "Vali": 6
+                "Basti": 2,
+                "Jannis": 2,
+                "Vali": -6,
+                "Xaver": 2
             },
             "ansager": "Vali",
-            "timestamp": "2026-04-26T20:09:18.184269"
+            "timestamp": "2026-04-26T20:13:59.375426"
         }
     ],
     "t_sau": 1,
